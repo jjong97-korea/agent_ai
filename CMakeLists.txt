@@ -17,6 +17,15 @@ enable_testing()
 
 add_executable(tests
     tests/test_main.cpp
+    tests/test_NVM_Write.cpp
+    tests/test_NVM_Read.cpp
+    tests/test_NVM_Compare.cpp
+    tests/test_NVM_Verify.cpp
+    tests/test_NVM_WriteUncorrectable.cpp
+    tests/test_NVM_DatasetManagement.cpp
+    tests/test_NVM_WriteZeroes.cpp
+    tests/test_NVM_Copy.cpp
+    tests/test_NVM_IoManagementReceive.cpp
     src/nvme_device.cpp
 )
 target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR})

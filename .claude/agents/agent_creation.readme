@@ -1,0 +1,69 @@
+● ~/.claude/keybindings.json을 생성했습니다.
+  이제 프롬프트 입력 중 Alt+Enter를 누르면 줄바꿈이 삽입됩니다. 기존 기본 단축키인 Ctrl+J도 그대로 사용
+  가능합니다.                                                                                                    
+  적용을 위해 Claude Code를 재시작해주세요.                                                                      
+
+#1 nvme-app-interface-generator agent 를 만들어줘.
+
+역할 : NVMe Spec 문서를 분석하여 C++ command interface 헤더/소스를 생성하고 빌드 검증까지 수행하는 에이전트.
+
+책임 
+ - NVMe 커맨드 인터페이스 (nvme_device.h / nvme_device.cpp) 신규 생성
+ - NVMe spec 문서(Markdown)를 기반으로 C+ 코드를 자동생성
+ - 생성된 코드의 빌드 오류를 자동으로 수정
+
+사용방법
+  nvme-app-interface-generator nvme_spec.md
+nvme-app-interface-generator ~/source/repos/vscode_cpp_setup/doc/spec/nvme_io/03.03.04_Read_command.md
+
+#2 NVMeSpecAnalysis Agent 를 만들어줘. 
+
+책임 : NVMe Spec 문서를 분석하여 테스트 가능한 요구사항을 도출하고, 요구사항 ID 부여, 이것을 Markdown 으로 정리
+
+역할 : 
+-NVMe spec 문서 (doc/spec/*md)를 분석
+-각 command의 동작, 파라미터 제약, 에러 조건을 식별
+-테스트 가능한 요구사항로 정제하여 ID 를 부여
+-Markdown 테이블 형식으로 doc/requirements/ 디렉토리에 저장
+
+만들어 졌으면 아래 해보세요. 
+nvme-spec-analysis 'doc/spec/nvme_io/03.03.06_Write_command.md'
+
+#3. TestCaseGenerator Agent 를 만들어줘.
+
+책임 : doc/requirements/ 의 요구사항 문서를 기반으로 google test 테스트 케이스를 생성하는 agent
+
+역할 : 
+- 요구사항 ID별로 그에 대응하는 test case 를 작성
+- 빌드 검증 및 빌드 에러 자동 수정
+- 테스트 실행 후 TC 자체 결함만 수정(구현체 결함은 수정하지 않음)
+- 요구사항이 모호하여 TC작성이 불가한 경우, nvme-spec-analysis agent 에 요구사항 수정 요청
+
+#4 NVMe Fake Device Implementor Agent 를 만들어줘.
+
+책임 : 테스트 실패를 기반으로 NVMe Fake Device의 구현을 점진적으로 추가하는 agent
+
+역할 : 
+- 테스트 실행 후 실패한 TC 를 분석
+- 요구사항 명세에 맞게 Fake Device 구현을 추가/수정 ( nvme_device )
+- In-memory storage 등 간단한 방법으로 동작 구현 
+- 수정 후 TC 재실행하여 FAIL -> PASS 전환 확인 
+- TC 가 실패하고 그 원인이 nvme device 코드의 오류라면 device 코드 수정
+  ( TC 오류라면 수정하지 않음 )
+
+agent 를 만드셨으면, 다음 처럼 해보세요.
+nvme-fake-device-implementor tests/test_NVM_Write.cpp
+
+# Orchestrator Agent 를 만들어줘.
+
+책임 : 
+사용자로부터 NVMe Spec 요구사항을 전달 받아 전체 TDD 파이프라인을 조율하는 agent.
+직접 로직을 수행하지 않고 sub-agent 에 작업을 위임
+
+역할 
+- 사용자 요구사항(NVMe Spec)을 분석하여 Sub-Agent 에 작업 위임
+- 전체 워크 플로우 진행 상태 추적
+- 빌드/ 테스트 실패 시 원인 분류 후 적절한 sub-agent에 수정 요청
+- 파이프라인 결과 보고
+
+orchestrator ~/source/repos/vscode_cpp_setup/doc/spec/nvme_io/03_IO_Commands_for_the_NVM_Command_Set.md
